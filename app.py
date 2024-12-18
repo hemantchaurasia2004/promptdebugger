@@ -1,18 +1,13 @@
 import streamlit as st
 import anthropic
-import os
 
 class SystemPromptInfluenceAnalyzer:
-    def __init__(self, api_key=None):
+    def __init__(self):
         """
-        Initialize the analyzer with Anthropic API
-
-        Args:
-            api_key (str, optional): Anthropic API key
+        Initialize the analyzer with Anthropic API from Streamlit secrets.
         """
-        self.client = anthropic.Anthropic(
-            api_key=api_key or os.getenv('ANTHROPIC_API_KEY')
-        )
+        api_key = st.secrets["ANTHROPIC_API_KEY"]
+        self.client = anthropic.Anthropic(api_key=api_key)
 
     def analyze_system_prompt_influence(
         self,
@@ -21,7 +16,7 @@ class SystemPromptInfluenceAnalyzer:
         verbose=True
     ):
         """
-        Analyze the influence of system prompt segments on conversation
+        Analyze the influence of system prompt segments on conversation.
 
         Args:
             system_prompt (str): Full system prompt
@@ -31,7 +26,6 @@ class SystemPromptInfluenceAnalyzer:
         Returns:
             dict: Analysis of system prompt segment influences
         """
-        # Construct a detailed analysis prompt
         analysis_prompt = f"""
         You are an expert in system prompt interpretability and discourse analysis.
 
@@ -65,7 +59,6 @@ class SystemPromptInfluenceAnalyzer:
         """
 
         try:
-            # Make API call to Claude
             response = self.client.messages.create(
                 model="claude-3-opus-20240229",
                 max_tokens=4000,
@@ -77,9 +70,7 @@ class SystemPromptInfluenceAnalyzer:
                 ]
             )
 
-            # Extract and process the analysis
             full_analysis = response.content[0].text
-
             return {
                 'raw_analysis': full_analysis,
                 'model_used': response.model
@@ -92,23 +83,15 @@ class SystemPromptInfluenceAnalyzer:
 def main():
     st.title("System Prompt Influence Analyzer")
 
-    # Sidebar for API Key input
-    st.sidebar.header("Anthropic API Configuration")
-    api_key = st.sidebar.text_input("Enter Anthropic API Key", type="password")
-
-    # File uploaders
     st.header("Upload Files")
     system_prompt_file = st.file_uploader("Upload System Prompt Text File", type=['txt'])
     conversation_log_file = st.file_uploader("Upload Conversation Log Text File", type=['txt'])
 
-    # Analysis button
     if st.button("Analyze System Prompt Influence"):
-        # Validate file uploads
         if not system_prompt_file or not conversation_log_file:
             st.warning("Please upload both system prompt and conversation log files.")
             return
 
-        # Read file contents
         try:
             system_prompt = system_prompt_file.getvalue().decode('utf-8')
             conversation_log = conversation_log_file.getvalue().decode('utf-8')
@@ -116,24 +99,14 @@ def main():
             st.error(f"Error reading files: {e}")
             return
 
-        # Validate API key
-        if not api_key:
-            st.warning("Please enter your Anthropic API Key in the sidebar.")
-            return
-
-        # Perform analysis
         try:
-            # Initialize Analyzer with provided API key
-            analyzer = SystemPromptInfluenceAnalyzer(api_key)
-
-            # Perform analysis
+            analyzer = SystemPromptInfluenceAnalyzer()
             st.info("Analyzing system prompt influence... This may take a few moments.")
             influence_analysis = analyzer.analyze_system_prompt_influence(
                 system_prompt,
                 conversation_log
             )
 
-            # Display results
             if influence_analysis:
                 st.header("Analysis Results")
                 st.subheader("Raw Analysis")
@@ -146,18 +119,20 @@ def main():
         except Exception as e:
             st.error(f"An error occurred during analysis: {e}")
 
-    # Additional guidance
     st.sidebar.markdown("""
     ### Instructions
-    1. Enter your Anthropic API Key
-    2. Upload system prompt text file
-    3. Upload conversation log text file
-    4. Click "Analyze System Prompt Influence"
+    1. Upload system prompt text file
+    2. Upload conversation log text file
+    3. Click "Analyze System Prompt Influence"
 
     #### File Format Requirements
     - Text files (.txt)
     - System prompt should describe the AI's behavior
     - Conversation log should include full interaction
+
+    #### Sample Files
+    - [Sample System Prompt](https://docs.google.com/document/d/19mfI9O-TT6wqiyDEjef3GvwqYJAsPCAfT_zIFT_pvK4/edit?usp=sharing)
+    - [Sample Conversation Log](https://docs.google.com/document/d/1N6gHQhZAJoNGhybedoTeq7w3giZSryhYM_RR2pmwH5U/edit?usp=sharing)
     """)
 
 if __name__ == "__main__":
